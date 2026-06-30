@@ -1,0 +1,23 @@
+name: Feature request
+description: Suggest an improvement to the gateway, scripts, or desktop app.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: e.g. "I want to route to a different model provider," "I want the tray app to support X."
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: false
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: false

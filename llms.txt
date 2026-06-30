@@ -1,0 +1,50 @@
+# claude-desktop-gateway
+
+> A local third-party inference gateway that lets Claude Desktop run on
+> OpenRouter models (GPT, Gemini, Llama, DeepSeek, and others) or a ChatGPT
+> Codex OAuth backend, instead of Anthropic's hosted API. It uses Claude
+> Desktop's own supported third-party ("3P") inference mode, so no patching
+> or reverse-engineered protocol is involved.
+
+claude-desktop-gateway is an unofficial, independent open-source project. It
+is not affiliated with Anthropic, OpenRouter, or OpenAI. It ships a CLI
+(plain Node.js, no dependencies) and an optional Electron tray app.
+
+Core flow:
+
+```
+Claude Desktop -> local gateway -> OpenRouter Anthropic-compatible /v1/messages
+Claude Desktop -> local gateway -> ChatGPT Codex OAuth Responses API
+```
+
+The gateway exposes the model route Claude Desktop expects
+(`claude-sonnet-4-5`) locally, while forwarding the real request to whatever
+upstream model is configured (`OPENROUTER_MODEL` or `CODEX_MODEL`).
+
+## Documentation
+
+- [README](./README.md): full setup instructions, CLI quickstart, desktop
+  app guide, environment variables, and FAQ.
+- [SECURITY.md](./SECURITY.md): threat model and vulnerability reporting.
+- [CONTRIBUTING.md](./CONTRIBUTING.md): development setup and pull request
+  guidelines.
+
+## Source
+
+- [src/openrouter-gateway.mjs](./src/openrouter-gateway.mjs): local HTTP
+  server exposing `/v1/messages`, `/v1/models`, `/health`, forwarding to
+  OpenRouter.
+- [src/codex-oauth-gateway.mjs](./src/codex-oauth-gateway.mjs): same local
+  API, forwarding to the ChatGPT Codex OAuth backend.
+- [src/openrouter-oauth-login.mjs](./src/openrouter-oauth-login.mjs):
+  OpenRouter PKCE OAuth login flow.
+- [src/platform-paths.mjs](./src/platform-paths.mjs): per-OS config and
+  credential file locations.
+- [scripts/configure-openrouter.mjs](./scripts/configure-openrouter.mjs):
+  writes Claude Desktop's third-party mode config.
+
+## Optional
+
+- [capture/README.md](./capture/README.md): notes from an earlier,
+  abandoned approach that intercepted Claude Desktop's private completion
+  stream before third-party mode existed.

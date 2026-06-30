@@ -1,37 +1,76 @@
-# claude-desktop-shim
+# claude-desktop-gateway
 
-Run **Claude Desktop** through **OpenRouter** or **Codex OAuth** using Claude Desktop's
-built-in third-party gateway mode.
+[![CI](https://github.com/luckeyfaraday/claude-desktop-gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/luckeyfaraday/claude-desktop-gateway/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![Node.js >=18.17](https://img.shields.io/badge/node-%3E%3D18.17-339933?logo=node.js&logoColor=white)](https://nodejs.org)
+[![Platforms](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey)](#requirements)
 
-The old plan in [`FEASIBILITY.md`](./FEASIBILITY.md) was to reverse-engineer and intercept
-Claude Desktop's private `/completion` stream. Current Claude Desktop builds include a
-supported third-party inference mode, so the practical path is now much simpler:
+**claude-desktop-gateway runs Claude Desktop on OpenRouter models or a ChatGPT
+Codex OAuth backend**, using Claude Desktop's own supported third-party ("3P")
+inference mode. It's a small local HTTP gateway plus setup scripts — no
+patching, no reverse-engineered protocol, no Anthropic API key required.
 
 ```
 Claude Desktop -> local gateway -> OpenRouter Anthropic-compatible /v1/messages
 Claude Desktop -> local gateway -> ChatGPT Codex OAuth Responses API
 ```
 
-The local gateway keeps the OpenRouter API key out of Claude Desktop's config and can map
-Claude Desktop's expected model route, `claude-sonnet-4-5`, to any OpenRouter model ID.
+The gateway keeps your OpenRouter API key (or Codex/Hermes OAuth token) out
+of Claude Desktop's own config, and maps the model route Claude Desktop
+expects (`claude-sonnet-4-5`) to whichever upstream model you actually want —
+any [OpenRouter](https://openrouter.ai) model (GPT, Gemini, Llama, DeepSeek,
+Grok, and more), or GPT-5-class models via a Codex OAuth backend.
 
-## Status
+## Table of contents
 
-**OpenRouter and Codex OAuth gateway paths wired locally.**
+- [Why this exists](#why-this-exists)
+- [Features](#features)
+- [Requirements](#requirements)
+- [Quickstart (CLI)](#quickstart-cli)
+- [Desktop app](#desktop-app-recommended-for-non-technical-users)
+- [Codex OAuth / GPT models](#codex-oauth--gpt-models)
+- [Using a different OpenRouter model](#using-a-different-openrouter-model)
+- [Native wrappers](#native-wrappers)
+- [Platform paths](#platform-paths)
+- [Layout](#layout)
+- [FAQ](#faq)
+- [Security notes](#security-notes)
+- [Contributing](#contributing)
+- [License](#license)
 
-- `src/openrouter-gateway.mjs` exposes `/v1/messages`, `/v1/models`, and `/health`.
-- `src/codex-oauth-gateway.mjs` exposes the same Anthropic-shaped local API and
-  forwards to the ChatGPT Codex backend with local Codex/Hermes OAuth tokens.
-- `scripts/configure-openrouter.mjs` writes Claude Desktop's 3P config to the correct
-  per-OS location.
-- `scripts/run-openrouter-gateway.mjs` starts the gateway with OpenRouter OAuth storage or
-  `OPENROUTER_API_KEY`.
-- `scripts/run-codex-gateway.mjs` starts the gateway with `~/.codex/auth.json` or
-  `~/.hermes/auth.json` `openai-codex` credentials.
-- Windows `.cmd` wrappers are provided beside the Unix shell wrappers.
+## Why this exists
 
-This machine has already been configured to point Claude Desktop 3P mode at
-`http://127.0.0.1:8787`.
+Claude Desktop's official inference path only talks to Anthropic's hosted
+API under an Anthropic subscription or API key. Current Claude Desktop
+builds also ship a supported third-party inference mode (`deploymentMode:
+"3p"`) that lets the app point at any OpenAI/Anthropic-compatible HTTP
+endpoint instead. claude-desktop-gateway is that endpoint: a local server
+that speaks the shape Claude Desktop expects and forwards real requests to
+OpenRouter or a Codex OAuth backend.
+
+An earlier version of this project planned to reverse-engineer and
+intercept Claude Desktop's private `/completion` stream — see
+[`capture/README.md`](./capture/README.md) for that abandoned approach.
+Once 3P mode shipped, that interception work became unnecessary.
+
+## Features
+
+- **OpenRouter gateway** (`src/openrouter-gateway.mjs`) — exposes
+  `/v1/messages`, `/v1/models`, and `/health`, and rewrites Claude Desktop's
+  requests to any OpenRouter model.
+- **Codex OAuth gateway** (`src/codex-oauth-gateway.mjs`) — same
+  Anthropic-shaped local API, forwarded to the ChatGPT Codex backend using
+  local Codex CLI / Hermes OAuth tokens, with automatic token refresh.
+- **One-command Claude Desktop configuration**
+  (`scripts/configure-openrouter.mjs`) — writes Claude Desktop's 3P config to
+  the correct per-OS location.
+- **Cross-platform launchers** — `npm run ...` commands plus native `.sh`
+  and `.cmd` wrappers for macOS, Linux, and Windows.
+- **Optional Electron tray app** — sign-in, start/stop, and configuration
+  from a GUI, for users who don't want a terminal.
+- **No required dependencies for the CLI path** — the gateways and scripts
+  are plain Node.js; only the desktop app needs `npm install` (for
+  Electron).
 
 ## Requirements
 
@@ -39,38 +78,6 @@ This machine has already been configured to point Claude Desktop 3P mode at
 - Node.js 18.17 or newer.
 - The CLI workflow needs no npm dependencies. The optional desktop app
   (`app/`) needs `npm install` to pull in Electron.
-
-## Desktop app (recommended for non-technical users)
-
-A small Electron tray app wraps the same gateway, OAuth, and configure logic
-behind a GUI — no terminal required. It does not reimplement anything; it spawns
-the existing `src/` and `scripts/` modules as child processes.
-
-```bash
-npm install      # one-time, pulls in Electron + electron-builder
-npm run app      # launch the tray app
-```
-
-From the tray menu (or the **Settings…** window) you can:
-
-- **Sign in to OpenRouter** — runs the PKCE OAuth flow in your browser.
-- **Start / Stop gateway** — supervises the gateway process; the tray icon turns
-  green when `/health` is live.
-- **Configure Claude Desktop** — writes the `Claude-3p` config. Relaunch Claude
-  Desktop afterward.
-- **Pick the model, host, and port** — changing them restarts the gateway.
-- **Launch at login / start gateway on launch** — so the gateway is up before
-  Claude Desktop needs it.
-
-Build a distributable installer (AppImage / dmg / nsis) with:
-
-```bash
-npm run dist
-```
-
-> Linux "launch at login" writes `~/.config/autostart/*.desktop`. On macOS and
-> Windows it uses the OS login-item API. Shipping to other machines means
-> code-signing the installer to avoid "unidentified developer" warnings.
 
 ## Quickstart (CLI)
 
@@ -88,8 +95,8 @@ Log in to OpenRouter once with OAuth:
 npm run login
 ```
 
-This opens a browser, completes OpenRouter PKCE login, and stores the generated
-OpenRouter key locally outside Claude Desktop's config.
+This opens a browser, completes OpenRouter PKCE login, and stores the
+generated OpenRouter key locally outside Claude Desktop's config.
 
 Start the gateway before launching Claude Desktop:
 
@@ -97,14 +104,47 @@ Start the gateway before launching Claude Desktop:
 npm run gateway
 ```
 
-By default, Claude Desktop sees `claude-sonnet-4-5` and the gateway forwards to
-`anthropic/claude-sonnet-4.5` on OpenRouter.
+By default, Claude Desktop sees `claude-sonnet-4-5` and the gateway forwards
+to `anthropic/claude-sonnet-4.5` on OpenRouter.
 
-### Codex OAuth / GPT models
+## Desktop app (recommended for non-technical users)
+
+A small Electron tray app wraps the same gateway, OAuth, and configure logic
+behind a GUI — no terminal required. It does not reimplement anything; it
+spawns the existing `src/` and `scripts/` modules as child processes.
+
+```bash
+npm install      # one-time, pulls in Electron + electron-builder
+npm run app      # launch the tray app
+```
+
+From the tray menu (or the **Settings…** window) you can:
+
+- **Sign in to OpenRouter** — runs the PKCE OAuth flow in your browser.
+- **Start / Stop gateway** — supervises the gateway process; the tray icon
+  turns green when `/health` is live.
+- **Configure Claude Desktop** — writes the `Claude-3p` config. Relaunch
+  Claude Desktop afterward.
+- **Pick the model, host, and port** — changing them restarts the gateway.
+- **Launch at login / start gateway on launch** — so the gateway is up
+  before Claude Desktop needs it.
+
+Build a distributable installer (AppImage / dmg / nsis) with:
+
+```bash
+npm run dist
+```
+
+> Linux "launch at login" writes `~/.config/autostart/*.desktop`. On macOS
+> and Windows it uses the OS login-item API. Shipping to other machines
+> means code-signing the installer to avoid "unidentified developer"
+> warnings.
+
+## Codex OAuth / GPT models
 
 This path uses the same local OAuth token shape as Codex CLI and Hermes'
-`openai-codex` provider. It is not the public OpenAI API-key path; it talks to
-the ChatGPT Codex backend and may break if that private backend changes.
+`openai-codex` provider. It is not the public OpenAI API-key path; it talks
+to the ChatGPT Codex backend and may break if that private backend changes.
 
 Log in with Codex CLI or Hermes first:
 
@@ -120,18 +160,19 @@ Then start the Codex gateway:
 npm run codex
 ```
 
-By default it forwards Claude Desktop requests to `gpt-5.5`. Override it with:
+By default it forwards Claude Desktop requests to `gpt-5.5`. Override it
+with:
 
 ```bash
 CODEX_MODEL=gpt-5.4-mini npm run codex
 ```
 
 The local route model still defaults to `claude-sonnet-4-5` because Claude
-Desktop's 3P mode expects a Claude-looking model label. That label is only the
-route Claude Desktop sees; the gateway logs `Codex upstream model: ...` for the
-real model sent upstream.
+Desktop's 3P mode expects a Claude-looking model label. That label is only
+the route Claude Desktop sees; the gateway logs `Codex upstream model: ...`
+for the real model sent upstream.
 
-To use a different OpenRouter model:
+## Using a different OpenRouter model
 
 macOS/Linux:
 
@@ -219,20 +260,74 @@ refresh token and writes the rotated token pair back to the same file.
 ```
 src/          # local OpenRouter and Codex OAuth gateways
 scripts/      # config + gateway launch helpers
-capture/      # legacy traffic-capture notes from the old interception approach
-FEASIBILITY.md
+app/          # optional Electron tray app
+capture/      # legacy traffic-capture notes from the abandoned interception approach
 package.json
 ```
 
-## Notes
+## FAQ
 
-- Claude Desktop's gateway model validation expects Claude/Anthropic-looking route names.
-  The local gateway handles this by exposing `claude-sonnet-4-5` while rewriting the
-  upstream OpenRouter or Codex `model`.
-- OpenRouter OAuth creates a user-controlled OpenRouter API key and stores it locally with
-  best-effort restricted file permissions. The gateway reads that file, or
-  `OPENROUTER_API_KEY` if set.
-- Codex OAuth uses existing local Codex/Hermes OAuth tokens. The gateway does not print
-  tokens and sends them only to the configured Codex backend.
+**Do I need an Anthropic API key or Claude subscription to use this?**
+No. claude-desktop-gateway routes Claude Desktop's requests to OpenRouter or
+a Codex OAuth backend instead of Anthropic. You authenticate to OpenRouter
+(or Codex CLI/Hermes), not to Anthropic.
+
+**Can I use GPT-5, Gemini, Llama, or other non-Claude models inside Claude
+Desktop?**
+Yes. Set `OPENROUTER_MODEL` to any model ID OpenRouter serves, or use the
+Codex OAuth gateway for GPT-5-class models through the ChatGPT Codex
+backend.
+
+**Is this an official Anthropic, OpenRouter, or OpenAI project?**
+No. It's an independent, unofficial local gateway that uses Claude
+Desktop's documented third-party inference mode plus OpenRouter's and Codex
+CLI's existing OAuth flows.
+
+**Why does Claude Desktop still show `claude-sonnet-4-5` as the model?**
+Claude Desktop's 3P mode validates that the route name looks like a
+Claude/Anthropic model. The gateway exposes that route name locally while
+rewriting the actual upstream model (`OPENROUTER_MODEL` or `CODEX_MODEL`)
+behind it — check `/health` or the gateway logs to see what's really being
+called.
+
+**Where are my API keys and OAuth tokens stored?**
+Locally, outside Claude Desktop's own config — see [Platform
+paths](#platform-paths). They're never sent anywhere except the configured
+upstream (OpenRouter or the Codex backend).
+
+**What happens if the gateway isn't running?**
+Claude Desktop will fail inference against `http://127.0.0.1:8787` (or
+whatever host/port you configured). Start the gateway (`npm run gateway` or
+`npm run codex`) before launching Claude Desktop.
+
+**Does this work on Windows and Linux, not just macOS?**
+Yes — the CLI, scripts, and Electron app are all cross-platform; see
+[Platform paths](#platform-paths) for per-OS config locations.
+
+## Security notes
+
+- Claude Desktop's gateway model validation expects Claude/Anthropic-looking
+  route names. The local gateway handles this by exposing
+  `claude-sonnet-4-5` while rewriting the upstream OpenRouter or Codex
+  `model`.
+- OpenRouter OAuth creates a user-controlled OpenRouter API key and stores
+  it locally with best-effort restricted file permissions. The gateway
+  reads that file, or `OPENROUTER_API_KEY` if set.
+- Codex OAuth uses existing local Codex/Hermes OAuth tokens. The gateway
+  does not print tokens and sends them only to the configured Codex
+  backend.
 - If the gateway is not running, Claude Desktop will fail inference against
   `http://127.0.0.1:8787`.
+
+See [SECURITY.md](./SECURITY.md) for the full threat model and how to
+report vulnerabilities.
+
+## Contributing
+
+Bug reports, feature requests, and pull requests are welcome — see
+[CONTRIBUTING.md](./CONTRIBUTING.md). This project follows the
+[Code of Conduct](./CODE_OF_CONDUCT.md).
+
+## License
+
+[MIT](./LICENSE)

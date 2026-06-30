@@ -1,0 +1,63 @@
+name: Bug report
+description: Something in the gateway, configure script, or desktop app isn't working.
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: component
+    attributes:
+      label: Which component?
+      options:
+        - OpenRouter gateway (src/openrouter-gateway.mjs)
+        - Codex OAuth gateway (src/codex-oauth-gateway.mjs)
+        - configure-openrouter script
+        - OpenRouter OAuth login
+        - Desktop app (Electron tray)
+        - Other / not sure
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: "e.g. macOS 15.2, Windows 11, Ubuntu 24.04"
+    validations:
+      required: true
+  - type: input
+    id: node
+    attributes:
+      label: Node.js version
+      placeholder: "node --version"
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Include the exact error message or gateway log line if you have one.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. npm run configure
+        2. npm run gateway
+        3. Open Claude Desktop and send a message
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: false
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I redacted any API keys or OAuth tokens before posting logs.
+          required: true
+        - label: This is not a security report (see SECURITY.md for those).
+          required: true

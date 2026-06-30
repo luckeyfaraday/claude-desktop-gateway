@@ -1,6 +1,27 @@
 {
-  "name": "claude-desktop-shim",
+  "name": "claude-desktop-gateway",
   "version": "0.1.0",
+  "description": "Run Claude Desktop on OpenRouter models or a ChatGPT Codex OAuth backend via a local third-party inference gateway, with a CLI and an optional Electron tray app.",
+  "keywords": [
+    "claude-desktop",
+    "claude",
+    "anthropic",
+    "openrouter",
+    "codex",
+    "chatgpt",
+    "llm-gateway",
+    "ai-gateway",
+    "oauth",
+    "electron"
+  ],
+  "homepage": "https://github.com/luckeyfaraday/claude-desktop-gateway#readme",
+  "bugs": "https://github.com/luckeyfaraday/claude-desktop-gateway/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/luckeyfaraday/claude-desktop-gateway.git"
+  },
+  "license": "MIT",
+  "author": "luckeyfaraday",
   "private": true,
   "type": "module",
   "main": "app/main.mjs",
