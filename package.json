@@ -59,7 +59,8 @@
     "publish": {
       "provider": "github",
       "owner": "luckeyfaraday",
-      "repo": "claude-desktop-gateway"
+      "repo": "claude-desktop-gateway",
+      "releaseType": "release"
     },
     "linux": {
       "target": ["AppImage"],
