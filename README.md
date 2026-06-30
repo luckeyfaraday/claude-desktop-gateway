@@ -19,7 +19,7 @@ The gateway keeps your OpenRouter API key (or Codex/Hermes OAuth token) out
 of Claude Desktop's own config, and maps the model route Claude Desktop
 expects (`claude-sonnet-4-5`) to whichever upstream model you actually want —
 any [OpenRouter](https://openrouter.ai) model (GPT, Gemini, Llama, DeepSeek,
-Grok, and more), or GPT-5-class models via a Codex OAuth backend.
+Grok, and more), or GPT-5.5 models via a Codex OAuth backend.
 
 ## Table of contents
 
@@ -190,7 +190,7 @@ By default it forwards Claude Desktop requests to `gpt-5.5`. Override it
 with:
 
 ```bash
-CODEX_MODEL=gpt-5.4-mini npm run codex
+CODEX_MODEL=your-codex-model-id npm run codex
 ```
 
 The local route model still defaults to `claude-sonnet-4-5` because Claude
@@ -299,10 +299,10 @@ No. claude-desktop-gateway routes Claude Desktop's requests to OpenRouter or
 a Codex OAuth backend instead of Anthropic. You authenticate to OpenRouter
 (or Codex CLI/Hermes), not to Anthropic.
 
-**Can I use GPT-5, Gemini, Llama, or other non-Claude models inside Claude
+**Can I use GPT-5.5, Gemini, Llama, or other non-Claude models inside Claude
 Desktop?**
 Yes. Set `OPENROUTER_MODEL` to any model ID OpenRouter serves, or use the
-Codex OAuth gateway for GPT-5-class models through the ChatGPT Codex
+Codex OAuth gateway for GPT-5.5 models through the ChatGPT Codex
 backend.
 
 **Is this an official Anthropic, OpenRouter, or OpenAI project?**
