@@ -14,6 +14,7 @@ const projectRoot = path.resolve(here, "..");
 const gatewayScript = path.join(projectRoot, "src", "openrouter-gateway.mjs");
 const oauthScript = path.join(projectRoot, "src", "openrouter-oauth-login.mjs");
 const configureScript = path.join(projectRoot, "scripts", "configure-openrouter.mjs");
+const restoreScript = path.join(projectRoot, "scripts", "restore-claude.mjs");
 
 const settingsPath = path.join(
   userConfigDir("claude-openrouter-gateway"),
@@ -146,6 +147,16 @@ async function configureClaude() {
   updateUI();
 }
 
+async function restoreClaude() {
+  try {
+    await runScript(restoreScript, "Restoring official Claude Desktop mode");
+    pushLog("Claude Desktop restored to official mode — relaunch Claude Desktop to apply");
+  } catch (err) {
+    pushLog(`restore failed: ${err.message}`);
+  }
+  updateUI();
+}
+
 function linuxAutostartFile() {
   const cfg = process.env.XDG_CONFIG_HOME || path.join(os.homedir(), ".config");
   return path.join(cfg, "autostart", "claude-openrouter-gateway.desktop");
@@ -228,6 +239,7 @@ function buildMenu() {
       : { label: "Start gateway", click: startGateway },
     { label: "Sign in to OpenRouter…", click: signIn },
     { label: "Configure Claude Desktop", click: configureClaude },
+    { label: "Restore official Claude Desktop", click: restoreClaude },
     { type: "separator" },
     { label: `Model: ${settings.upstreamModel}`, enabled: false },
     { label: "Settings…", click: showWindow },
@@ -276,6 +288,7 @@ ipcMain.handle("get-state", () => getState());
 ipcMain.handle("get-logs", () => logBuffer.slice());
 ipcMain.handle("sign-in", () => signIn());
 ipcMain.handle("configure", () => configureClaude());
+ipcMain.handle("restore", () => restoreClaude());
 ipcMain.handle("start-gateway", () => startGateway());
 ipcMain.handle("stop-gateway", () => stopGateway());
 ipcMain.handle("save-settings", (_event, patch) => {

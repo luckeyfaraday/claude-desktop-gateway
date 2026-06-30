@@ -51,6 +51,7 @@ $("toggleBtn").addEventListener("click", async () => {
 
 $("signInBtn").addEventListener("click", () => window.api.signIn());
 $("configureBtn").addEventListener("click", () => window.api.configure());
+$("restoreBtn").addEventListener("click", () => window.api.restore());
 
 $("saveBtn").addEventListener("click", async () => {
   const port = parseInt($("port").value, 10);

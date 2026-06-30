@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld("api", {
   saveSettings: (patch) => ipcRenderer.invoke("save-settings", patch),
   signIn: () => ipcRenderer.invoke("sign-in"),
   configure: () => ipcRenderer.invoke("configure"),
+  restore: () => ipcRenderer.invoke("restore"),
   startGateway: () => ipcRenderer.invoke("start-gateway"),
   stopGateway: () => ipcRenderer.invoke("stop-gateway"),
   onLog: (cb) => ipcRenderer.on("log", (_event, line) => cb(line)),
