@@ -38,6 +38,31 @@ npm run app
 - Describe what you tested (CLI gateway, desktop app, which OS) in the PR
   description.
 
+## Cutting a release
+
+Pushing a tag matching `v*.*.*` (e.g. `v0.2.0`) triggers
+`.github/workflows/release.yml`, which builds the desktop app on Linux,
+macOS, and Windows and publishes the AppImage/dmg/nsis installers to a
+GitHub Release for that tag. Bump `version` in `package.json` first:
+
+```bash
+npm version 0.2.0 --no-git-tag-version
+git commit -am "Release v0.2.0"
+git tag v0.2.0
+git push origin main v0.2.0
+```
+
+You can also trigger the workflow manually from the Actions tab
+(`workflow_dispatch`) without pushing a tag, useful for testing the build
+itself — it won't publish a release unless a `v*.*.*` tag triggered it, but
+the built installers are still attached to the workflow run as artifacts.
+
+To publish from your own machine instead of CI, set `GH_TOKEN` to a token
+with `repo` scope and run `npm run release`.
+
+The release isn't code-signed, so macOS will show an "unidentified
+developer" warning and Windows SmartScreen may warn on first run.
+
 ## Reporting bugs and requesting features
 
 Use the issue templates under **Issues → New issue**. Include your OS, Node

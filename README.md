@@ -127,6 +127,15 @@ A small Electron tray app wraps the same gateway, OAuth, and configure logic
 behind a GUI — no terminal required. It does not reimplement anything; it
 spawns the existing `src/` and `scripts/` modules as child processes.
 
+**Download a prebuilt installer** from the
+[Releases page](https://github.com/luckeyfaraday/claude-desktop-gateway/releases)
+(AppImage for Linux, dmg for macOS, exe for Windows) — no Node.js or
+terminal required. The build isn't code-signed, so macOS will show an
+"unidentified developer" warning and Windows SmartScreen may warn on first
+run; both are expected for an unsigned open-source build.
+
+Or run it from source:
+
 ```bash
 npm install      # one-time, pulls in Electron + electron-builder
 npm run app      # launch the tray app
