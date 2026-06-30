@@ -86,5 +86,6 @@ for (const [name, color] of Object.entries(variants)) {
   }
   // A larger app icon reuses the active color.
 }
-fs.writeFileSync(path.join(assetsDir, "icon.png"), circleIcon(256, [52, 199, 89]));
+// electron-builder requires the mac icns source to be at least 512x512.
+fs.writeFileSync(path.join(assetsDir, "icon.png"), circleIcon(1024, [52, 199, 89]));
 console.log(`Wrote tray icons to ${assetsDir}`);
