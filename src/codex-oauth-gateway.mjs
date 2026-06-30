@@ -895,6 +895,57 @@ async function streamResponsesAsAnthropic(upstream, res) {
   }
 }
 
+async function consumeResponsesStream(webStream) {
+  const text = [];
+  const output = [];
+  let usage;
+  let status = "completed";
+  let id;
+
+  for await (const frame of parseSseStream(webStream)) {
+    if (!frame.data || frame.data === "[DONE]") continue;
+    let payload;
+    try {
+      payload = JSON.parse(frame.data);
+    } catch {
+      continue;
+    }
+    const type = payload.type || frame.event;
+    if (type === "error") {
+      throw new Error(formatUpstreamError(502, JSON.stringify(payload)));
+    }
+    if (type?.includes("output_text.delta")) {
+      if (typeof payload.delta === "string") text.push(payload.delta);
+      continue;
+    }
+    if (type === "response.output_item.done") {
+      if (payload.item) output.push(payload.item);
+      continue;
+    }
+    if (
+      type === "response.completed" ||
+      type === "response.incomplete" ||
+      type === "response.failed"
+    ) {
+      usage = payload.response?.usage || usage;
+      status = payload.response?.status || type.replace("response.", "");
+      id = payload.response?.id || id;
+      if (type === "response.failed") {
+        throw new Error(formatUpstreamError(502, JSON.stringify(payload.response || payload)));
+      }
+      break;
+    }
+  }
+
+  return {
+    id,
+    status,
+    output,
+    output_text: text.join(""),
+    usage,
+  };
+}
+
 async function handleMessages(req, res) {
   let credential;
   try {
@@ -912,16 +963,17 @@ async function handleMessages(req, res) {
     return;
   }
 
-  const stream = payload.stream !== false;
+  const clientWantsStream = payload.stream !== false;
+  const upstreamStream = true;
   const requestId = crypto.randomUUID();
-  const upstreamPayload = buildResponsesPayload(payload, stream);
+  const upstreamPayload = buildResponsesPayload(payload, upstreamStream);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
 
   try {
     const upstream = await fetch(`${codexBaseUrl}/responses`, {
       method: "POST",
-      headers: codexRequestHeaders(credential.accessToken, requestId, stream),
+      headers: codexRequestHeaders(credential.accessToken, requestId, upstreamStream),
       body: JSON.stringify(upstreamPayload),
       signal: controller.signal,
     });
@@ -936,12 +988,12 @@ async function handleMessages(req, res) {
       return;
     }
 
-    if (stream) {
+    if (clientWantsStream) {
       await streamResponsesAsAnthropic(upstream, res);
       return;
     }
 
-    const responsePayload = await upstream.json();
+    const responsePayload = await consumeResponsesStream(upstream.body);
     const out = responsesToAnthropicMessage(responsePayload);
     res.setHeader("x-claude-desktop-shim-provider", "codex-oauth");
     res.setHeader("x-claude-desktop-shim-model", codexModel);
