@@ -48,11 +48,6 @@ endpoint instead. claude-desktop-gateway is that endpoint: a local server
 that speaks the shape Claude Desktop expects and forwards real requests to
 OpenRouter or a Codex OAuth backend.
 
-An earlier version of this project planned to reverse-engineer and
-intercept Claude Desktop's private `/completion` stream — see
-[`capture/README.md`](./capture/README.md) for that abandoned approach.
-Once 3P mode shipped, that interception work became unnecessary.
-
 ## Features
 
 - **OpenRouter gateway** (`src/openrouter-gateway.mjs`) — exposes
@@ -261,7 +256,6 @@ refresh token and writes the rotated token pair back to the same file.
 src/          # local OpenRouter and Codex OAuth gateways
 scripts/      # config + gateway launch helpers
 app/          # optional Electron tray app
-capture/      # legacy traffic-capture notes from the abandoned interception approach
 package.json
 ```
 

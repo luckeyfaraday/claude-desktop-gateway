@@ -42,9 +42,3 @@ upstream model is configured (`OPENROUTER_MODEL` or `CODEX_MODEL`).
   credential file locations.
 - [scripts/configure-openrouter.mjs](./scripts/configure-openrouter.mjs):
   writes Claude Desktop's third-party mode config.
-
-## Optional
-
-- [capture/README.md](./capture/README.md): notes from an earlier,
-  abandoned approach that intercepted Claude Desktop's private completion
-  stream before third-party mode existed.
