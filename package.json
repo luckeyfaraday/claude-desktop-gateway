@@ -1,0 +1,50 @@
+{
+  "name": "claude-desktop-shim",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "app/main.mjs",
+  "scripts": {
+    "login": "node src/openrouter-oauth-login.mjs",
+    "configure": "node scripts/configure-openrouter.mjs",
+    "gateway": "node scripts/run-openrouter-gateway.mjs",
+    "codex": "node scripts/run-codex-gateway.mjs",
+    "icons": "node app/make-icons.mjs",
+    "app": "npm run icons && electron .",
+    "dist": "npm run icons && electron-builder",
+    "check": "node --check src/platform-paths.mjs && node --check src/openrouter-oauth-login.mjs && node --check src/openrouter-gateway.mjs && node --check src/codex-oauth-gateway.mjs && node --check scripts/configure-openrouter.mjs && node --check scripts/run-openrouter-gateway.mjs && node --check scripts/run-codex-gateway.mjs && node --check app/main.mjs && node --check app/make-icons.mjs && node --check app/renderer.js && node --check app/preload.cjs"
+  },
+  "engines": {
+    "node": ">=18.17"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "dev.claudedesktopshim.gateway",
+    "productName": "Claude OpenRouter Gateway",
+    "files": [
+      "app/**/*",
+      "src/**/*",
+      "scripts/configure-openrouter.mjs",
+      "scripts/run-codex-gateway.mjs",
+      "package.json"
+    ],
+    "extraMetadata": { "main": "app/main.mjs" },
+    "linux": {
+      "target": ["AppImage"],
+      "category": "Utility",
+      "icon": "app/assets/icon.png"
+    },
+    "mac": {
+      "target": ["dmg"],
+      "category": "public.app-category.developer-tools",
+      "icon": "app/assets/icon.png"
+    },
+    "win": {
+      "target": ["nsis"],
+      "icon": "app/assets/icon.png"
+    }
+  }
+}

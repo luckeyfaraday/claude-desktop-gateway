@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline';" />
+    <title>Claude × OpenRouter</title>
+    <style>
+      :root {
+        --bg: #1c1c1e;
+        --panel: #2c2c2e;
+        --border: #3a3a3c;
+        --text: #f2f2f7;
+        --muted: #98989f;
+        --accent: #0a84ff;
+        --green: #34c759;
+        --red: #ff453a;
+        --amber: #ff9f0a;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font: 13px/1.5 system-ui, -apple-system, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+      header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border);
+      }
+      header h1 { font-size: 15px; margin: 0; font-weight: 600; }
+      .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); flex: none; }
+      .dot.green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+      .dot.red { background: var(--red); }
+      .dot.amber { background: var(--amber); }
+      main { padding: 16px 20px; display: flex; flex-direction: column; gap: 16px; }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px 16px;
+      }
+      .card h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 10px; }
+      .row { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 8px 0; }
+      .row .status { display: flex; align-items: center; gap: 8px; }
+      label { color: var(--muted); display: block; margin: 10px 0 4px; }
+      input[type="text"], input[type="number"] {
+        width: 100%;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        color: var(--text);
+        padding: 8px 10px;
+        font: inherit;
+      }
+      input:focus { outline: 1px solid var(--accent); border-color: var(--accent); }
+      .buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+      button {
+        background: var(--accent);
+        color: white;
+        border: none;
+        border-radius: 7px;
+        padding: 8px 14px;
+        font: inherit;
+        font-weight: 500;
+        cursor: pointer;
+      }
+      button.secondary { background: var(--panel); border: 1px solid var(--border); color: var(--text); }
+      button:hover { filter: brightness(1.1); }
+      button:disabled { opacity: .45; cursor: default; }
+      .check { display: flex; align-items: center; gap: 8px; margin: 6px 0; color: var(--text); }
+      .check input { width: auto; }
+      pre#log {
+        background: #0d0d0f;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px;
+        height: 150px;
+        overflow: auto;
+        margin: 0;
+        font: 11px/1.5 ui-monospace, monospace;
+        color: #c8c8cf;
+        white-space: pre-wrap;
+      }
+      .hint { color: var(--muted); font-size: 11px; margin-top: 4px; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <span id="trayDot" class="dot"></span>
+      <h1>Claude&nbsp;×&nbsp;OpenRouter</h1>
+    </header>
+    <main>
+      <div class="card">
+        <h2>Status</h2>
+        <div class="row">
+          <div class="status"><span id="gwDot" class="dot"></span><span id="gwText">—</span></div>
+          <button id="toggleBtn" class="secondary">Start</button>
+        </div>
+        <div class="row">
+          <div class="status"><span id="authDot" class="dot"></span><span id="authText">—</span></div>
+          <button id="signInBtn" class="secondary">Sign in to OpenRouter…</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Claude Desktop</h2>
+        <p class="hint" style="margin-top:0">
+          Points Claude Desktop's third-party gateway mode at the local gateway. Relaunch
+          Claude Desktop after applying.
+        </p>
+        <button id="configureBtn">Configure Claude Desktop</button>
+      </div>
+
+      <div class="card">
+        <h2>Model &amp; routing</h2>
+        <label for="upstreamModel">OpenRouter model</label>
+        <input id="upstreamModel" type="text" placeholder="anthropic/claude-sonnet-4.5" />
+        <label for="routeModel">Route name Claude Desktop sees</label>
+        <input id="routeModel" type="text" placeholder="claude-sonnet-4-5" />
+        <div class="row" style="gap:12px;align-items:flex-end">
+          <div style="flex:1">
+            <label for="host">Host</label>
+            <input id="host" type="text" placeholder="127.0.0.1" />
+          </div>
+          <div style="width:110px">
+            <label for="port">Port</label>
+            <input id="port" type="number" placeholder="8787" />
+          </div>
+        </div>
+        <p class="hint">
+          The route name must look like a Claude/Anthropic model or Claude Desktop rejects it.
+          Saving while the gateway runs restarts it automatically.
+        </p>
+        <div class="buttons" style="margin-top:10px"><button id="saveBtn">Save</button></div>
+      </div>
+
+      <div class="card">
+        <h2>Startup</h2>
+        <label class="check"><input id="autostart" type="checkbox" /> Launch this app at login</label>
+        <label class="check"><input id="startOnLaunch" type="checkbox" /> Start the gateway automatically when the app opens</label>
+      </div>
+
+      <div class="card">
+        <h2>Log</h2>
+        <pre id="log"></pre>
+      </div>
+    </main>
+    <script src="renderer.js"></script>
+  </body>
+</html>
