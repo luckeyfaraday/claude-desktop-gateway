@@ -28,12 +28,13 @@
   "scripts": {
     "login": "node src/openrouter-oauth-login.mjs",
     "configure": "node scripts/configure-openrouter.mjs",
+    "restore": "node scripts/restore-claude.mjs",
     "gateway": "node scripts/run-openrouter-gateway.mjs",
     "codex": "node scripts/run-codex-gateway.mjs",
     "icons": "node app/make-icons.mjs",
     "app": "npm run icons && electron .",
     "dist": "npm run icons && electron-builder",
-    "check": "node --check src/platform-paths.mjs && node --check src/openrouter-oauth-login.mjs && node --check src/openrouter-gateway.mjs && node --check src/codex-oauth-gateway.mjs && node --check scripts/configure-openrouter.mjs && node --check scripts/run-openrouter-gateway.mjs && node --check scripts/run-codex-gateway.mjs && node --check app/main.mjs && node --check app/make-icons.mjs && node --check app/renderer.js && node --check app/preload.cjs"
+    "check": "node --check src/platform-paths.mjs && node --check src/openrouter-oauth-login.mjs && node --check src/openrouter-gateway.mjs && node --check src/codex-oauth-gateway.mjs && node --check scripts/configure-openrouter.mjs && node --check scripts/restore-claude.mjs && node --check scripts/run-openrouter-gateway.mjs && node --check scripts/run-codex-gateway.mjs && node --check app/main.mjs && node --check app/make-icons.mjs && node --check app/renderer.js && node --check app/preload.cjs"
   },
   "engines": {
     "node": ">=18.17"
@@ -49,6 +50,7 @@
       "app/**/*",
       "src/**/*",
       "scripts/configure-openrouter.mjs",
+      "scripts/restore-claude.mjs",
       "scripts/run-codex-gateway.mjs",
       "package.json"
     ],

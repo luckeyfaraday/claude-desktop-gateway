@@ -27,6 +27,7 @@ Grok, and more), or GPT-5-class models via a Codex OAuth backend.
 - [Features](#features)
 - [Requirements](#requirements)
 - [Quickstart (CLI)](#quickstart-cli)
+- [Switching back to official Claude Desktop](#switching-back-to-official-claude-desktop)
 - [Desktop app](#desktop-app-recommended-for-non-technical-users)
 - [Codex OAuth / GPT models](#codex-oauth--gpt-models)
 - [Using a different OpenRouter model](#using-a-different-openrouter-model)
@@ -59,6 +60,9 @@ OpenRouter or a Codex OAuth backend.
 - **One-command Claude Desktop configuration**
   (`scripts/configure-openrouter.mjs`) — writes Claude Desktop's 3P config to
   the correct per-OS location.
+- **One-command restore** (`scripts/restore-claude.mjs`) — switches Claude
+  Desktop back to its official, Anthropic-hosted mode, for whenever the
+  gateway isn't running and you still want Claude Desktop to work.
 - **Cross-platform launchers** — `npm run ...` commands plus native `.sh`
   and `.cmd` wrappers for macOS, Linux, and Windows.
 - **Optional Electron tray app** — sign-in, start/stop, and configuration
@@ -102,6 +106,21 @@ npm run gateway
 By default, Claude Desktop sees `claude-sonnet-4-5` and the gateway forwards
 to `anthropic/claude-sonnet-4.5` on OpenRouter.
 
+## Switching back to official Claude Desktop
+
+Claude Desktop reads its deployment mode from the same config file
+`npm run configure` writes — it checks that file on every launch, regardless
+of how it's started. If the gateway isn't running, Claude Desktop will fail
+inference rather than silently falling back to Anthropic. To switch back to
+official, Anthropic-hosted mode:
+
+```bash
+npm run restore
+```
+
+Then quit Claude Desktop completely (including the tray icon) and relaunch
+it. Run `npm run configure` again whenever you want gateway mode back.
+
 ## Desktop app (recommended for non-technical users)
 
 A small Electron tray app wraps the same gateway, OAuth, and configure logic
@@ -120,6 +139,9 @@ From the tray menu (or the **Settings…** window) you can:
   turns green when `/health` is live.
 - **Configure Claude Desktop** — writes the `Claude-3p` config. Relaunch
   Claude Desktop afterward.
+- **Restore official Claude Desktop** — switches Claude Desktop back to its
+  normal, Anthropic-hosted mode. Use this when the gateway isn't running and
+  you still want Claude Desktop to work.
 - **Pick the model, host, and port** — changing them restarts the gateway.
 - **Launch at login / start gateway on launch** — so the gateway is up
   before Claude Desktop needs it.
@@ -206,6 +228,7 @@ macOS/Linux:
 
 ```bash
 ./scripts/configure-openrouter.sh
+./scripts/restore-claude.sh
 ./scripts/login-openrouter.sh
 ./scripts/run-openrouter-gateway.sh
 ./scripts/run-codex-gateway.sh
@@ -215,6 +238,7 @@ Windows:
 
 ```bat
 .\scripts\configure-openrouter.cmd
+.\scripts\restore-claude.cmd
 .\scripts\login-openrouter.cmd
 .\scripts\run-openrouter-gateway.cmd
 .\scripts\run-codex-gateway.cmd
@@ -292,7 +316,9 @@ upstream (OpenRouter or the Codex backend).
 **What happens if the gateway isn't running?**
 Claude Desktop will fail inference against `http://127.0.0.1:8787` (or
 whatever host/port you configured). Start the gateway (`npm run gateway` or
-`npm run codex`) before launching Claude Desktop.
+`npm run codex`) before launching Claude Desktop, or run `npm run restore`
+(or click **Restore official Claude Desktop** in the tray app) to switch
+Claude Desktop back to official, Anthropic-hosted mode instead.
 
 **Does this work on Windows and Linux, not just macOS?**
 Yes — the CLI, scripts, and Electron app are all cross-platform; see
@@ -311,7 +337,8 @@ Yes — the CLI, scripts, and Electron app are all cross-platform; see
   does not print tokens and sends them only to the configured Codex
   backend.
 - If the gateway is not running, Claude Desktop will fail inference against
-  `http://127.0.0.1:8787`.
+  `http://127.0.0.1:8787`. Run `npm run restore` to switch Claude Desktop
+  back to official, Anthropic-hosted mode.
 
 See [SECURITY.md](./SECURITY.md) for the full threat model and how to
 report vulnerabilities.
