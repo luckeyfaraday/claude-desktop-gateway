@@ -1,6 +1,6 @@
 {
   "name": "claude-desktop-gateway",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Run Claude Desktop on OpenRouter models or a ChatGPT Codex OAuth backend via a local third-party inference gateway, with a CLI and an optional Electron tray app.",
   "keywords": [
     "claude-desktop",
