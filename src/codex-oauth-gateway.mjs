@@ -45,6 +45,16 @@ function hermesAuthFile() {
   return path.join(path.resolve(hermesHome), "auth.json");
 }
 
+function openCodeAuthFile() {
+  if (process.env.OPENCODE_AUTH_FILE) return path.resolve(process.env.OPENCODE_AUTH_FILE);
+  // OpenCode stores credentials in its global data directory. It uses an
+  // XDG-style path (~/.local/share/opencode) on every platform, including
+  // Windows, but honour XDG_DATA_HOME and a LOCALAPPDATA fallback to be safe.
+  const dataHome =
+    process.env.XDG_DATA_HOME || path.join(homeDir(), ".local", "share");
+  return path.join(path.resolve(dataHome), "opencode", "auth.json");
+}
+
 function json(res, status, body) {
   const payload = JSON.stringify(body);
   res.writeHead(status, {
@@ -213,6 +223,39 @@ function hermesCandidates() {
   ].filter(Boolean);
 }
 
+function openCodeCandidate() {
+  const file = openCodeAuthFile();
+  const payload = readJsonFile(file);
+  // OpenCode signs into the ChatGPT/Codex backend with OpenAI's official OAuth
+  // client, storing the result under the `openai` provider as
+  // { type: "oauth", access, refresh, expires(ms), accountId }. That is the
+  // same credential the Codex backend expects, so it slots straight into the
+  // existing Responses pipeline.
+  const provider = payload?.openai;
+  if (!provider || provider.type !== "oauth") return undefined;
+  const tokens = asTokenPair({
+    access_token: provider.access,
+    refresh_token: provider.refresh,
+  });
+  if (!tokens) return undefined;
+  return {
+    source: `${file} openai`,
+    tokens,
+    save(refreshed) {
+      const next = { ...payload };
+      const exp = tokenExpiresAt(refreshed.accessToken);
+      next.openai = {
+        ...provider,
+        type: "oauth",
+        access: refreshed.accessToken,
+        refresh: refreshed.refreshToken || tokens.refreshToken,
+        expires: exp ? exp * 1000 : provider.expires,
+      };
+      writeJsonFile(file, next);
+    },
+  };
+}
+
 async function refreshCodexTokens(tokens) {
   if (!tokens.refreshToken) {
     throw new Error("Codex credential has no refresh_token.");
@@ -270,6 +313,26 @@ async function refreshCodexTokens(tokens) {
   }
 }
 
+const CREDENTIAL_SOURCES = {
+  codex: () => [codexCliCandidate()],
+  opencode: () => [openCodeCandidate()],
+  hermes: () => hermesCandidates(),
+};
+
+function selectedCredentialSources() {
+  const raw = (process.env.CODEX_OAUTH_SOURCE || "").trim().toLowerCase();
+  if (!raw) return ["codex", "opencode", "hermes"];
+  const requested = raw.split(/[,\s]+/).filter(Boolean);
+  const unknown = requested.filter((name) => !CREDENTIAL_SOURCES[name]);
+  if (unknown.length) {
+    throw new Error(
+      `Unknown CODEX_OAUTH_SOURCE value(s): ${unknown.join(", ")}. ` +
+        `Valid sources: ${Object.keys(CREDENTIAL_SOURCES).join(", ")}.`,
+    );
+  }
+  return requested;
+}
+
 async function resolveCodexCredential() {
   const envAccessToken =
     process.env.CODEX_ACCESS_TOKEN || process.env.OPENAI_CODEX_ACCESS_TOKEN;
@@ -277,10 +340,9 @@ async function resolveCodexCredential() {
     return { accessToken: envAccessToken.trim(), source: "CODEX_ACCESS_TOKEN" };
   }
 
-  const candidates = [
-    codexCliCandidate(),
-    ...hermesCandidates(),
-  ].filter(Boolean);
+  const candidates = selectedCredentialSources()
+    .flatMap((name) => CREDENTIAL_SOURCES[name]())
+    .filter(Boolean);
 
   const errors = [];
   for (const candidate of candidates) {
@@ -300,7 +362,8 @@ async function resolveCodexCredential() {
 
   const suffix = errors.length ? ` Last refresh error: ${errors[errors.length - 1]}` : "";
   throw new Error(
-    `No usable Codex OAuth credential found. Run \`codex login\` or \`hermes auth add openai-codex\`.${suffix}`,
+    `No usable Codex OAuth credential found. Run \`codex login\`, ` +
+      `\`opencode auth login\` (OpenAI / ChatGPT), or \`hermes auth add openai-codex\`.${suffix}`,
   );
 }
 
@@ -1110,7 +1173,10 @@ server.listen(listenPort, listenHost, () => {
   console.error(`Claude Desktop route model label: ${routeModel}`);
   console.error(`Codex upstream model: ${codexModel}`);
   console.error(`Codex upstream base: ${codexBaseUrl}`);
-  console.error(`Codex auth search: ${codexAuthFile()} then ${hermesAuthFile()}`);
+  console.error(
+    `Codex auth sources (${selectedCredentialSources().join(", ")}): ` +
+      `${codexAuthFile()}, ${openCodeAuthFile()}, ${hermesAuthFile()}`,
+  );
 });
 
 for (const signal of ["SIGINT", "SIGTERM"]) {

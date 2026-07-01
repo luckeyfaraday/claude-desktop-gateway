@@ -30,6 +30,7 @@ Grok, and more), or GPT-5.5 models via a Codex OAuth backend.
 - [Switching back to official Claude Desktop](#switching-back-to-official-claude-desktop)
 - [Desktop app](#desktop-app-recommended-for-non-technical-users)
 - [Codex OAuth / GPT models](#codex-oauth--gpt-models)
+- [OpenCode OAuth / GPT models](#opencode-oauth--gpt-models)
 - [Using a different OpenRouter model](#using-a-different-openrouter-model)
 - [Native wrappers](#native-wrappers)
 - [Platform paths](#platform-paths)
@@ -206,6 +207,37 @@ Desktop's 3P mode expects a Claude-looking model label. That label is only
 the route Claude Desktop sees; the gateway logs `Codex upstream model: ...`
 for the real model sent upstream.
 
+## OpenCode OAuth / GPT models
+
+[OpenCode](https://opencode.ai)'s "Sign in with ChatGPT" uses OpenAI's
+official OAuth client — the same client ID and token endpoint as Codex CLI —
+and stores the result under the `openai` provider in
+`~/.local/share/opencode/auth.json`. That credential drives the same ChatGPT
+Codex backend, so this path reuses the Codex pipeline and only changes which
+file the token is read from.
+
+Log in with OpenCode first (choose the OpenAI / ChatGPT Plus/Pro option):
+
+```bash
+opencode auth login
+```
+
+Then start the OpenCode gateway:
+
+```bash
+npm run opencode
+```
+
+This is equivalent to `npm run codex` with `CODEX_OAUTH_SOURCE=opencode`,
+which pins credential resolution to OpenCode's `auth.json`. Without that pin,
+the Codex gateway already tries OpenCode automatically (after `~/.codex` and
+before Hermes), so `CODEX_OAUTH_SOURCE` is only needed to force a single
+source. The same model overrides apply (`CODEX_MODEL`, `CLAUDE_ROUTE_MODEL`,
+...).
+
+If startup logs `hasAuth:false`, the stored OpenCode token has expired and its
+refresh token is no longer valid — re-run `opencode auth login` to re-mint it.
+
 ## Using a different OpenRouter model
 
 macOS/Linux:
@@ -249,6 +281,7 @@ macOS/Linux:
 ./scripts/login-openrouter.sh
 ./scripts/run-openrouter-gateway.sh
 ./scripts/run-codex-gateway.sh
+./scripts/run-opencode-gateway.sh
 ```
 
 Windows:
@@ -259,6 +292,7 @@ Windows:
 .\scripts\login-openrouter.cmd
 .\scripts\run-openrouter-gateway.cmd
 .\scripts\run-codex-gateway.cmd
+.\scripts\run-opencode-gateway.cmd
 ```
 
 ## Platform paths
@@ -282,14 +316,21 @@ OpenRouter OAuth credential:
 Set `CLAUDE_3P_DIR` to override the Claude Desktop config root, or
 `OPENROUTER_AUTH_FILE` to override the OpenRouter credential file.
 
-Codex OAuth credential lookup:
+Codex OAuth credential lookup (in order; restrict with `CODEX_OAUTH_SOURCE`):
 
 1. `CODEX_ACCESS_TOKEN` / `OPENAI_CODEX_ACCESS_TOKEN`
-2. `CODEX_AUTH_FILE`, or `${CODEX_HOME:-~/.codex}/auth.json`
-3. `HERMES_AUTH_FILE`, or `${HERMES_HOME:-~/.hermes}/auth.json`
+2. `codex` — `CODEX_AUTH_FILE`, or `${CODEX_HOME:-~/.codex}/auth.json`
+3. `opencode` — `OPENCODE_AUTH_FILE`, or
+   `${XDG_DATA_HOME:-~/.local/share}/opencode/auth.json` (`openai` provider)
+4. `hermes` — `HERMES_AUTH_FILE`, or `${HERMES_HOME:-~/.hermes}/auth.json`
+
+Set `CODEX_OAUTH_SOURCE` to a comma-separated subset of `codex,opencode,hermes`
+to pin which files are consulted (the `run-opencode-gateway` wrapper sets it to
+`opencode`).
 
 If an access token is expiring, the gateway refreshes it with the local
-refresh token and writes the rotated token pair back to the same file.
+refresh token and writes the rotated token pair back to the same file, in that
+file's native format.
 
 ## Layout
 
