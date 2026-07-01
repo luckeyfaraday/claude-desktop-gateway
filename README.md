@@ -5,21 +5,24 @@
 [![Node.js >=18.17](https://img.shields.io/badge/node-%3E%3D18.17-339933?logo=node.js&logoColor=white)](https://nodejs.org)
 [![Platforms](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey)](#requirements)
 
-**claude-desktop-gateway runs Claude Desktop on OpenRouter models or a ChatGPT
-Codex OAuth backend**, using Claude Desktop's own supported third-party ("3P")
-inference mode. It's a small local HTTP gateway plus setup scripts — no
-patching, no reverse-engineered protocol, no Anthropic API key required.
+**claude-desktop-gateway runs Claude Desktop on OpenRouter models, your local
+[OpenCode](https://opencode.ai) install, or a ChatGPT Codex OAuth backend**,
+using Claude Desktop's own supported third-party ("3P") inference mode. It's a
+small local HTTP gateway plus setup scripts — no patching, no reverse-engineered
+protocol, no Anthropic API key required.
 
 ```
 Claude Desktop -> local gateway -> OpenRouter Anthropic-compatible /v1/messages
+Claude Desktop -> local gateway -> local OpenCode server (opencode serve)
 Claude Desktop -> local gateway -> ChatGPT Codex OAuth Responses API
 ```
 
-The gateway keeps your OpenRouter API key (or Codex/Hermes OAuth token) out
+The gateway keeps your OpenRouter API key or Codex/Hermes OAuth token out
 of Claude Desktop's own config, and maps the model route Claude Desktop
 expects (`claude-sonnet-4-5`) to whichever upstream model you actually want —
 any [OpenRouter](https://openrouter.ai) model (GPT, Gemini, Llama, DeepSeek,
-Grok, and more), or GPT-5.5 models via a Codex OAuth backend.
+Grok, and more), any model your local OpenCode install can reach, or GPT-5.5
+models via a Codex OAuth backend.
 
 ## Table of contents
 
@@ -30,6 +33,7 @@ Grok, and more), or GPT-5.5 models via a Codex OAuth backend.
 - [Switching back to official Claude Desktop](#switching-back-to-official-claude-desktop)
 - [Desktop app](#desktop-app-recommended-for-non-technical-users)
 - [Codex OAuth / GPT models](#codex-oauth--gpt-models)
+- [OpenCode models](#opencode-models)
 - [Using a different OpenRouter model](#using-a-different-openrouter-model)
 - [Native wrappers](#native-wrappers)
 - [Platform paths](#platform-paths)
@@ -47,7 +51,7 @@ builds also ship a supported third-party inference mode (`deploymentMode:
 "3p"`) that lets the app point at any OpenAI/Anthropic-compatible HTTP
 endpoint instead. claude-desktop-gateway is that endpoint: a local server
 that speaks the shape Claude Desktop expects and forwards real requests to
-OpenRouter or a Codex OAuth backend.
+OpenRouter, a local OpenCode server, or a Codex OAuth backend.
 
 ## Features
 
@@ -57,6 +61,11 @@ OpenRouter or a Codex OAuth backend.
 - **Codex OAuth gateway** (`src/codex-oauth-gateway.mjs`) — same
   Anthropic-shaped local API, forwarded to the ChatGPT Codex backend using
   local Codex CLI / Hermes OAuth tokens, with automatic token refresh.
+- **OpenCode gateway** (`src/opencode-gateway.mjs`) — same Anthropic-shaped
+  local API, bridged to a local OpenCode server (`opencode serve`). OpenCode
+  holds your account, providers, and models; the gateway creates a session per
+  request and translates between Claude Desktop and OpenCode's session/event
+  API.
 - **One-command Claude Desktop configuration**
   (`scripts/configure-openrouter.mjs`) — writes Claude Desktop's 3P config to
   the correct per-OS location.
@@ -206,6 +215,49 @@ Desktop's 3P mode expects a Claude-looking model label. That label is only
 the route Claude Desktop sees; the gateway logs `Codex upstream model: ...`
 for the real model sent upstream.
 
+## OpenCode models
+
+This path bridges Claude Desktop to a local [OpenCode](https://opencode.ai)
+server. OpenCode itself holds your account, providers, models, and their
+credentials — the gateway just creates a session, forwards each request, and
+translates between Claude Desktop's Anthropic API and OpenCode's session/event
+API. No keys or provider endpoints live in this project.
+
+Set up OpenCode the normal way first (installed, and signed in to whatever
+providers you use):
+
+```bash
+opencode auth login
+```
+
+Then start the OpenCode gateway:
+
+```bash
+npm run opencode
+```
+
+This launches a local `opencode serve` (or reuses one — see below) and starts
+the gateway on `127.0.0.1:8787`. Choose which OpenCode provider/model to route
+to with `OPENCODE_PROVIDER` and `OPENCODE_MODEL` (either separately or combined
+as `provider/model`); leave them unset to use OpenCode's own default:
+
+```bash
+OPENCODE_PROVIDER=opencode \
+OPENCODE_MODEL=deepseek-v4-flash-free \
+npm run opencode
+```
+
+Other environment variables:
+
+- `OPENCODE_SERVER_URL` — talk to an already-running OpenCode server instead of
+  spawning one (e.g. `http://127.0.0.1:4096`).
+- `OPENCODE_SERVER_HOST` / `OPENCODE_SERVER_PORT` — where to start the spawned
+  server (default `127.0.0.1:4096`).
+- `OPENCODE_BIN` — path to the `opencode` binary (default `opencode` on `PATH`).
+- `OPENCODE_AGENT` — pin a specific OpenCode agent.
+- `OPENCODE_GATEWAY_HOST` / `OPENCODE_GATEWAY_PORT` — where the gateway listens
+  (default `127.0.0.1:8787`).
+
 ## Using a different OpenRouter model
 
 macOS/Linux:
@@ -249,6 +301,7 @@ macOS/Linux:
 ./scripts/login-openrouter.sh
 ./scripts/run-openrouter-gateway.sh
 ./scripts/run-codex-gateway.sh
+./scripts/run-opencode-gateway.sh
 ```
 
 Windows:
@@ -259,6 +312,7 @@ Windows:
 .\scripts\login-openrouter.cmd
 .\scripts\run-openrouter-gateway.cmd
 .\scripts\run-codex-gateway.cmd
+.\scripts\run-opencode-gateway.cmd
 ```
 
 ## Platform paths
@@ -282,6 +336,9 @@ OpenRouter OAuth credential:
 Set `CLAUDE_3P_DIR` to override the Claude Desktop config root, or
 `OPENROUTER_AUTH_FILE` to override the OpenRouter credential file.
 
+OpenCode manages its own auth (via `opencode auth login`); this project stores
+no OpenCode credential of its own.
+
 Codex OAuth credential lookup:
 
 1. `CODEX_ACCESS_TOKEN` / `OPENAI_CODEX_ACCESS_TOKEN`
@@ -294,7 +351,7 @@ refresh token and writes the rotated token pair back to the same file.
 ## Layout
 
 ```
-src/          # local OpenRouter and Codex OAuth gateways
+src/          # local OpenRouter, OpenCode, and Codex OAuth gateways
 scripts/      # config + gateway launch helpers
 app/          # optional Electron tray app
 package.json
@@ -303,39 +360,40 @@ package.json
 ## FAQ
 
 **Do I need an Anthropic API key or Claude subscription to use this?**
-No. claude-desktop-gateway routes Claude Desktop's requests to OpenRouter or
-a Codex OAuth backend instead of Anthropic. You authenticate to OpenRouter
-(or Codex CLI/Hermes), not to Anthropic.
+No. claude-desktop-gateway routes Claude Desktop's requests to OpenRouter, a
+local OpenCode server, or a Codex OAuth backend instead of Anthropic. You
+authenticate to OpenRouter, OpenCode, or Codex CLI/Hermes, not to Anthropic.
 
 **Can I use GPT-5.5, Gemini, Llama, or other non-Claude models inside Claude
 Desktop?**
 Yes. Set `OPENROUTER_MODEL` to any model ID OpenRouter serves, or use the
-Codex OAuth gateway for GPT-5.5 models through the ChatGPT Codex
-backend.
+OpenCode gateway for any model your OpenCode install can reach, or use the
+Codex OAuth gateway for GPT-5.5 models through the ChatGPT Codex backend.
 
 **Is this an official Anthropic, OpenRouter, or OpenAI project?**
 No. It's an independent, unofficial local gateway that uses Claude
-Desktop's documented third-party inference mode plus OpenRouter's and Codex
-CLI's existing OAuth flows.
+Desktop's documented third-party inference mode plus OpenRouter, OpenCode, and
+Codex CLI/Hermes.
 
 **Why does Claude Desktop still show `claude-sonnet-4-5` as the model?**
 Claude Desktop's 3P mode validates that the route name looks like a
 Claude/Anthropic model. The gateway exposes that route name locally while
-rewriting the actual upstream model (`OPENROUTER_MODEL` or `CODEX_MODEL`)
-behind it — check `/health` or the gateway logs to see what's really being
-called.
+rewriting the actual upstream model (`OPENROUTER_MODEL`, `OPENCODE_MODEL`, or
+`CODEX_MODEL`) behind it — check `/health` or the gateway logs to see what's
+really being called.
 
 **Where are my API keys and OAuth tokens stored?**
 Locally, outside Claude Desktop's own config — see [Platform
 paths](#platform-paths). They're never sent anywhere except the configured
-upstream (OpenRouter or the Codex backend).
+upstream (OpenRouter, your local OpenCode server, or the Codex backend).
 
 **What happens if the gateway isn't running?**
 Claude Desktop will fail inference against `http://127.0.0.1:8787` (or
-whatever host/port you configured). Start the gateway (`npm run gateway` or
-`npm run codex`) before launching Claude Desktop, or run `npm run restore`
-(or click **Restore official Claude Desktop** in the tray app) to switch
-Claude Desktop back to official, Anthropic-hosted mode instead.
+whatever host/port you configured). Start the gateway (`npm run gateway`,
+`npm run opencode`, or `npm run codex`) before launching Claude Desktop, or
+run `npm run restore` (or click **Restore official Claude Desktop** in the
+tray app) to switch Claude Desktop back to official, Anthropic-hosted mode
+instead.
 
 **Does this work on Windows and Linux, not just macOS?**
 Yes — the CLI, scripts, and Electron app are all cross-platform; see
@@ -345,14 +403,17 @@ Yes — the CLI, scripts, and Electron app are all cross-platform; see
 
 - Claude Desktop's gateway model validation expects Claude/Anthropic-looking
   route names. The local gateway handles this by exposing
-  `claude-sonnet-4-5` while rewriting the upstream OpenRouter or Codex
-  `model`.
+  `claude-sonnet-4-5` while rewriting the upstream OpenRouter, OpenCode, or
+  Codex `model`.
 - OpenRouter OAuth creates a user-controlled OpenRouter API key and stores
   it locally with best-effort restricted file permissions. The gateway
   reads that file, or `OPENROUTER_API_KEY` if set.
 - Codex OAuth uses existing local Codex/Hermes OAuth tokens. The gateway
   does not print tokens and sends them only to the configured Codex
   backend.
+- The OpenCode gateway holds no credentials of its own. It talks only to your
+  local OpenCode server (`opencode serve`), which owns all provider auth and
+  model routing.
 - If the gateway is not running, Claude Desktop will fail inference against
   `http://127.0.0.1:8787`. Run `npm run restore` to switch Claude Desktop
   back to official, Anthropic-hosted mode.

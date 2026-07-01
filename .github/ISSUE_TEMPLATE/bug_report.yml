@@ -8,6 +8,7 @@ body:
       label: Which component?
       options:
         - OpenRouter gateway (src/openrouter-gateway.mjs)
+        - OpenCode gateway (src/opencode-gateway.mjs)
         - Codex OAuth gateway (src/codex-oauth-gateway.mjs)
         - configure-openrouter script
         - OpenRouter OAuth login
