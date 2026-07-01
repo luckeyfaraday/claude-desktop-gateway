@@ -39,12 +39,39 @@
       .card {
         background: var(--panel);
         border: 1px solid var(--border);
-        border-radius: 10px;
+        border-radius: 8px;
         padding: 14px 16px;
       }
       .card h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 10px; }
       .row { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 8px 0; }
       .row .status { display: flex; align-items: center; gap: 8px; }
+      .usage-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+      .usage-metric {
+        min-height: 62px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: #252528;
+        padding: 8px 10px;
+      }
+      .usage-value {
+        display: block;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 18px;
+        line-height: 1.2;
+        font-weight: 650;
+      }
+      .usage-label { display: block; color: var(--muted); font-size: 11px; margin-top: 4px; }
+      .usage-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 14px;
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 11px;
+      }
       label { color: var(--muted); display: block; margin: 10px 0 4px; }
       input[type="text"], input[type="number"] {
         width: 100%;
@@ -85,6 +112,11 @@
         white-space: pre-wrap;
       }
       .hint { color: var(--muted); font-size: 11px; margin-top: 4px; }
+      @media (max-width: 430px) {
+        header { padding: 14px 16px; }
+        main { padding: 14px 16px; }
+        .usage-grid { grid-template-columns: 1fr; }
+      }
     </style>
   </head>
   <body>
@@ -102,6 +134,28 @@
         <div class="row">
           <div class="status"><span id="authDot" class="dot"></span><span id="authText">—</span></div>
           <button id="signInBtn" class="secondary">Sign in to OpenRouter…</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Token usage</h2>
+        <div class="usage-grid">
+          <div class="usage-metric">
+            <span id="usageTotal" class="usage-value">—</span>
+            <span class="usage-label">Session total</span>
+          </div>
+          <div class="usage-metric">
+            <span id="usageInput" class="usage-value">—</span>
+            <span class="usage-label">Input</span>
+          </div>
+          <div class="usage-metric">
+            <span id="usageOutput" class="usage-value">—</span>
+            <span class="usage-label">Output</span>
+          </div>
+        </div>
+        <div class="usage-meta">
+          <span id="usageRequests">No completed requests</span>
+          <span id="usageLast">Last request —</span>
         </div>
       </div>
 

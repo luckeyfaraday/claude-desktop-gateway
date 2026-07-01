@@ -6,6 +6,7 @@ import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
+import { createUsageTracker, normalizeUsage } from "./token-usage.mjs";
 
 const CODEX_OAUTH_CLIENT_ID = "app_EMoamEEZ73f0CkXaXp7hrann";
 const CODEX_OAUTH_TOKEN_URL =
@@ -21,6 +22,10 @@ const codexBaseUrl = (
 const requestTimeoutMs = Number(process.env.CODEX_TIMEOUT_MS || "300000");
 const refreshSkewSeconds = Number(process.env.CODEX_REFRESH_SKEW_SECONDS || "120");
 const appTitle = process.env.CODEX_APP_TITLE || "claude-desktop-shim";
+const usageTracker = createUsageTracker({
+  label: "Codex",
+  model: codexModel,
+});
 
 function homeDir() {
   const home = os.homedir() || process.env.HOME || process.env.USERPROFILE;
@@ -542,12 +547,13 @@ function buildResponsesPayload(anthropicPayload, stream) {
 }
 
 function usageToAnthropic(usage) {
-  if (!usage || typeof usage !== "object") {
+  const normalized = normalizeUsage(usage);
+  if (!normalized) {
     return { input_tokens: 0, output_tokens: 0 };
   }
   return {
-    input_tokens: Number(usage.input_tokens || 0),
-    output_tokens: Number(usage.output_tokens || 0),
+    input_tokens: normalized.input_tokens,
+    output_tokens: normalized.output_tokens,
   };
 }
 
@@ -887,6 +893,7 @@ async function streamResponsesAsAnthropic(upstream, res) {
         break;
       }
     }
+    usageTracker.record(usage, { model: codexModel });
     writer.stop({ usage, status });
     res.end();
   } catch (error) {
@@ -994,6 +1001,7 @@ async function handleMessages(req, res) {
     }
 
     const responsePayload = await consumeResponsesStream(upstream.body);
+    usageTracker.record(responsePayload.usage, { model: codexModel });
     const out = responsesToAnthropicMessage(responsePayload);
     res.setHeader("x-claude-desktop-shim-provider", "codex-oauth");
     res.setHeader("x-claude-desktop-shim-model", codexModel);
@@ -1070,6 +1078,7 @@ const server = http.createServer(async (req, res) => {
       codexBaseUrl,
       hasAuth: Boolean(authSource),
       authSource: authSource ? authSource.replace(homeDir(), "~") : "",
+      usage: usageTracker.snapshot(),
     });
     return;
   }
