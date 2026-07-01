@@ -66,7 +66,8 @@ OpenRouter or a Codex OAuth backend.
 - **Cross-platform launchers** — `npm run ...` commands plus native `.sh`
   and `.cmd` wrappers for macOS, Linux, and Windows.
 - **Optional Electron tray app** — sign-in, start/stop, and configuration
-  from a GUI, for users who don't want a terminal.
+  from a GUI, for users who don't want a terminal. The settings window shows
+  session token usage for completed gateway requests.
 - **No required dependencies for the CLI path** — the gateways and scripts
   are plain Node.js; only the desktop app needs `npm install` (for
   Electron).
@@ -105,6 +106,10 @@ npm run gateway
 
 By default, Claude Desktop sees `claude-sonnet-4-5` and the gateway forwards
 to `anthropic/claude-sonnet-4.5` on OpenRouter.
+
+The gateway logs token usage for completed requests and exposes the current
+session totals from `GET /health` under `usage`. The Electron app reads that
+same health payload for its token usage panel.
 
 ## Switching back to official Claude Desktop
 
@@ -185,6 +190,9 @@ Then start the Codex gateway:
 ```bash
 npm run codex
 ```
+
+The Codex gateway also logs completed-request token usage and includes session
+totals in `GET /health` under `usage`.
 
 By default it forwards Claude Desktop requests to `gpt-5.5`. Override it
 with:

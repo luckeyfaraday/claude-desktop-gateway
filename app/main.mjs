@@ -218,6 +218,20 @@ function statusLabel() {
   return lastHealth ? "Gateway: running" : "Gateway: starting…";
 }
 
+function formatCount(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return "0";
+  return new Intl.NumberFormat().format(number);
+}
+
+function usageLabel() {
+  const usage = lastHealth?.usage;
+  if (!usage?.requests) return "Session tokens: none yet";
+  const total = usage.total || {};
+  const requestLabel = usage.requests === 1 ? "request" : "requests";
+  return `Session tokens: ${formatCount(total.total_tokens)} (${formatCount(usage.requests)} ${requestLabel})`;
+}
+
 function getState() {
   return {
     settings,
@@ -233,6 +247,7 @@ function buildMenu() {
   return Menu.buildFromTemplate([
     { label: statusLabel(), enabled: false },
     { label: hasAuth() ? "✓ Signed in to OpenRouter" : "✗ Not signed in", enabled: false },
+    { label: usageLabel(), enabled: false },
     { type: "separator" },
     gatewayProc
       ? { label: "Stop gateway", click: stopGateway }
@@ -271,7 +286,7 @@ function showWindow() {
   }
   win = new BrowserWindow({
     width: 540,
-    height: 680,
+    height: 760,
     resizable: true,
     title: "Claude × OpenRouter",
     icon: path.join(here, "assets", "icon.png"),

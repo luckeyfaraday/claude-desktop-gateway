@@ -1,5 +1,6 @@
 const $ = (id) => document.getElementById(id);
 const logEl = $("log");
+const numberFormatter = new Intl.NumberFormat();
 
 function appendLog(line) {
   const atBottom = logEl.scrollTop + logEl.clientHeight >= logEl.scrollHeight - 4;
@@ -16,8 +17,37 @@ for (const id of editable) {
   });
 }
 
+function formatCount(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? numberFormatter.format(number) : "—";
+}
+
+function pluralize(count, singular) {
+  return `${formatCount(count)} ${singular}${count === 1 ? "" : "s"}`;
+}
+
+function tokenLabel(count) {
+  return pluralize(Number(count || 0), "token");
+}
+
+function renderUsage(usage) {
+  const total = usage?.total || {};
+  const last = usage?.last;
+  const requests = Number(usage?.requests || 0);
+
+  $("usageTotal").textContent = requests ? formatCount(total.total_tokens) : "—";
+  $("usageInput").textContent = requests ? formatCount(total.input_tokens) : "—";
+  $("usageOutput").textContent = requests ? formatCount(total.output_tokens) : "—";
+  $("usageRequests").textContent = requests
+    ? pluralize(requests, "completed request")
+    : "No completed requests";
+  $("usageLast").textContent = last
+    ? `Last request ${tokenLabel(last.total_tokens)}`
+    : "Last request —";
+}
+
 function render(state) {
-  const { running, healthy, signedIn, settings } = state;
+  const { running, healthy, signedIn, settings, health } = state;
 
   const trayDot = $("trayDot");
   trayDot.className = "dot " + (running && healthy ? "green" : running ? "amber" : "");
@@ -37,6 +67,8 @@ function render(state) {
   }
   $("autostart").checked = !!settings.autostart;
   $("startOnLaunch").checked = !!settings.startGatewayOnLaunch;
+
+  renderUsage(health?.usage);
 }
 
 async function refresh() {

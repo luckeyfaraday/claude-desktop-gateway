@@ -4,6 +4,12 @@ import http from "node:http";
 import fs from "node:fs";
 import { setTimeout as delay } from "node:timers/promises";
 import { defaultOpenRouterAuthFile } from "./platform-paths.mjs";
+import {
+  createUsageTracker,
+  mergeUsage,
+  usageFromPayload,
+  usageFromSseFrame,
+} from "./token-usage.mjs";
 
 const listenHost = process.env.OPENROUTER_GATEWAY_HOST || "127.0.0.1";
 const listenPort = Number(process.env.OPENROUTER_GATEWAY_PORT || "8787");
@@ -15,6 +21,10 @@ const upstreamModel =
 const routeModel = process.env.CLAUDE_ROUTE_MODEL || "claude-sonnet-4-5";
 const requestTimeoutMs = Number(process.env.OPENROUTER_TIMEOUT_MS || "300000");
 const authFile = defaultOpenRouterAuthFile();
+const usageTracker = createUsageTracker({
+  label: "OpenRouter",
+  model: upstreamModel,
+});
 
 function loadOpenRouterApiKey() {
   if (process.env.OPENROUTER_API_KEY) return process.env.OPENROUTER_API_KEY;
@@ -65,24 +75,60 @@ function responseHeaders(upstream) {
   return headers;
 }
 
-async function pipeWebStreamToNode(webStream, nodeStream) {
+function inspectSseBuffer(buffer, usage) {
+  let nextUsage = usage;
+  let nextBuffer = buffer;
+  let index;
+  while ((index = nextBuffer.indexOf("\n\n")) !== -1) {
+    const frame = nextBuffer.slice(0, index);
+    nextBuffer = nextBuffer.slice(index + 2);
+    nextUsage = mergeUsage(nextUsage, usageFromSseFrame(frame));
+  }
+  return { buffer: nextBuffer, usage: nextUsage };
+}
+
+async function pipeSseStreamAndRecordUsage(webStream, nodeStream) {
   if (!webStream) {
     nodeStream.end();
     return;
   }
 
   const reader = webStream.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let requestUsage;
+
   try {
     for (;;) {
       const { done, value } = await reader.read();
       if (done) break;
+
       if (!nodeStream.write(Buffer.from(value))) {
         await new Promise((resolve) => nodeStream.once("drain", resolve));
       }
+
+      buffer += decoder.decode(value, { stream: true });
+      buffer = buffer.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+      ({ buffer, usage: requestUsage } = inspectSseBuffer(buffer, requestUsage));
     }
+
+    buffer += decoder.decode();
+    buffer = buffer.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    if (buffer.trim()) {
+      requestUsage = mergeUsage(requestUsage, usageFromSseFrame(buffer));
+    }
+    usageTracker.record(requestUsage, { model: upstreamModel });
   } finally {
     reader.releaseLock();
     nodeStream.end();
+  }
+}
+
+function usageFromJsonText(text) {
+  try {
+    return usageFromPayload(JSON.parse(text));
+  } catch {
+    return undefined;
   }
 }
 
@@ -140,8 +186,18 @@ async function handleMessages(req, res) {
     outHeaders["x-claude-desktop-shim-model"] = upstreamModel;
     if (originalModel) outHeaders["x-claude-desktop-shim-route-model"] = originalModel;
 
+    const contentType = upstream.headers.get("content-type") || "";
+    if (contentType.toLowerCase().includes("text/event-stream")) {
+      res.writeHead(upstream.status, outHeaders);
+      await pipeSseStreamAndRecordUsage(upstream.body, res);
+      return;
+    }
+
+    const text = await upstream.text();
+    usageTracker.record(usageFromJsonText(text), { model: upstreamModel });
+    outHeaders["content-length"] = Buffer.byteLength(text);
     res.writeHead(upstream.status, outHeaders);
-    await pipeWebStreamToNode(upstream.body, res);
+    res.end(text);
   } catch (error) {
     if (!res.headersSent) {
       const aborted = error?.name === "AbortError";
@@ -188,6 +244,7 @@ const server = http.createServer(async (req, res) => {
       routeModel,
       upstreamModel,
       openRouterBaseUrl,
+      usage: usageTracker.snapshot(),
     });
     return;
   }
