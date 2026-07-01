@@ -1,9 +1,9 @@
 # Security Policy
 
 claude-desktop-gateway runs a local HTTP server that holds OpenRouter API
-keys and/or Codex/Hermes OAuth tokens, and rewrites Claude Desktop's
-inference requests. Credential handling bugs here are security issues, not
-ordinary bugs.
+keys, OpenCode OAuth tokens, and/or Codex/Hermes OAuth tokens, and rewrites
+Claude Desktop's inference requests. Credential handling bugs here are
+security issues, not ordinary bugs.
 
 ## Supported versions
 
@@ -21,7 +21,7 @@ reproduction steps.
 
 Please include:
 
-- The gateway involved (OpenRouter or Codex OAuth) and your OS.
+- The gateway involved (OpenRouter, OpenCode OAuth, or Codex OAuth) and your OS.
 - Steps to reproduce, including any relevant request/response shapes
   (**redact API keys and OAuth tokens before sharing them**).
 - The impact you'd expect (credential exposure, token leakage to an
@@ -37,7 +37,12 @@ Please include:
   API used by Codex CLI/Hermes). It only forwards requests to the configured
   `CODEX_BASE_URL`/`CODEX_OAUTH_TOKEN_URL`; report any code path that sends
   tokens elsewhere.
-- The gateway binds to `127.0.0.1` by default. Setting `OPENROUTER_GATEWAY_HOST`
-  or `CODEX_GATEWAY_HOST` to a non-loopback address exposes the local API key
-  to your network; that's expected behavior, not a vulnerability, but we're
-  happy to discuss safer defaults.
+- The OpenCode OAuth gateway talks to OpenCode Console for device login,
+  remote provider config, and token refresh. It forwards model requests to the
+  selected OpenCode/Zen model endpoint.
+- The gateway binds to `127.0.0.1` by default. Setting
+  `OPENROUTER_GATEWAY_HOST`, `OPENCODE_GATEWAY_HOST`, or `CODEX_GATEWAY_HOST`
+  to a non-loopback address
+  exposes the local API key or OAuth bearer path to your network; that's
+  expected behavior, not a vulnerability, but we're happy to discuss safer
+  defaults.

@@ -66,7 +66,8 @@ developer" warning and Windows SmartScreen may warn on first run.
 ## Reporting bugs and requesting features
 
 Use the issue templates under **Issues → New issue**. Include your OS, Node
-version, and which gateway (OpenRouter or Codex OAuth) you were running.
+version, and which gateway (OpenRouter, OpenCode OAuth, or Codex OAuth) you
+were running.
 
 ## Security issues
 

@@ -8,9 +8,11 @@ body:
       label: Which component?
       options:
         - OpenRouter gateway (src/openrouter-gateway.mjs)
+        - OpenCode OAuth gateway (src/opencode-oauth-gateway.mjs)
         - Codex OAuth gateway (src/codex-oauth-gateway.mjs)
         - configure-openrouter script
         - OpenRouter OAuth login
+        - OpenCode OAuth login
         - Desktop app (Electron tray)
         - Other / not sure
     validations:

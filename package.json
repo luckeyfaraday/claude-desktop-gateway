@@ -1,12 +1,14 @@
 {
   "name": "claude-desktop-gateway",
   "version": "0.1.1",
-  "description": "Run Claude Desktop on OpenRouter models or a ChatGPT Codex OAuth backend via a local third-party inference gateway, with a CLI and an optional Electron tray app.",
+  "description": "Run Claude Desktop on OpenRouter, OpenCode/Zen, or ChatGPT Codex OAuth backends via a local third-party inference gateway, with a CLI and an optional Electron tray app.",
   "keywords": [
     "claude-desktop",
     "claude",
     "anthropic",
     "openrouter",
+    "opencode",
+    "zen",
     "codex",
     "chatgpt",
     "llm-gateway",
@@ -48,7 +50,7 @@
   },
   "build": {
     "appId": "dev.claudedesktopshim.gateway",
-    "productName": "Claude OpenRouter Gateway",
+    "productName": "Claude Desktop Gateway",
     "files": [
       "app/**/*",
       "src/**/*",

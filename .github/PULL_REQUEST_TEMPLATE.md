@@ -5,6 +5,7 @@
 ## Component(s) touched
 
 - [ ] OpenRouter gateway (`src/openrouter-gateway.mjs`)
+- [ ] OpenCode OAuth gateway (`src/opencode-oauth-gateway.mjs`)
 - [ ] Codex OAuth gateway (`src/codex-oauth-gateway.mjs`)
 - [ ] Configure / login scripts (`scripts/`)
 - [ ] Desktop app (`app/`)
