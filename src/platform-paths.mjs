@@ -41,3 +41,11 @@ export function defaultOpenRouterAuthFile() {
 
   return path.join(userConfigDir("claude-openrouter-gateway"), "openrouter.json");
 }
+
+export function defaultOpenCodeAuthFile() {
+  if (process.env.OPENCODE_OAUTH_FILE) {
+    return path.resolve(process.env.OPENCODE_OAUTH_FILE);
+  }
+
+  return path.join(userConfigDir("claude-openrouter-gateway"), "opencode.json");
+}

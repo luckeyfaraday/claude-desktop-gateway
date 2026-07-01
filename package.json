@@ -1,12 +1,14 @@
 {
   "name": "claude-desktop-gateway",
   "version": "0.1.1",
-  "description": "Run Claude Desktop on OpenRouter models or a ChatGPT Codex OAuth backend via a local third-party inference gateway, with a CLI and an optional Electron tray app.",
+  "description": "Run Claude Desktop on OpenRouter, OpenCode/Zen, or ChatGPT Codex OAuth backends via a local third-party inference gateway, with a CLI and an optional Electron tray app.",
   "keywords": [
     "claude-desktop",
     "claude",
     "anthropic",
     "openrouter",
+    "opencode",
+    "zen",
     "codex",
     "chatgpt",
     "llm-gateway",
@@ -27,15 +29,17 @@
   "main": "app/main.mjs",
   "scripts": {
     "login": "node src/openrouter-oauth-login.mjs",
+    "login:opencode": "node src/opencode-oauth-login.mjs",
     "configure": "node scripts/configure-openrouter.mjs",
     "restore": "node scripts/restore-claude.mjs",
     "gateway": "node scripts/run-openrouter-gateway.mjs",
     "codex": "node scripts/run-codex-gateway.mjs",
+    "opencode": "node scripts/run-opencode-gateway.mjs",
     "icons": "node app/make-icons.mjs",
     "app": "npm run icons && electron .",
     "dist": "npm run icons && electron-builder",
     "release": "npm run icons && electron-builder --publish always",
-    "check": "node --check src/platform-paths.mjs && node --check src/token-usage.mjs && node --check src/openrouter-oauth-login.mjs && node --check src/openrouter-gateway.mjs && node --check src/codex-oauth-gateway.mjs && node --check scripts/configure-openrouter.mjs && node --check scripts/restore-claude.mjs && node --check scripts/run-openrouter-gateway.mjs && node --check scripts/run-codex-gateway.mjs && node --check app/main.mjs && node --check app/make-icons.mjs && node --check app/renderer.js && node --check app/preload.cjs"
+    "check": "node --check src/platform-paths.mjs && node --check src/token-usage.mjs && node --check src/openrouter-oauth-login.mjs && node --check src/opencode-oauth-login.mjs && node --check src/openrouter-gateway.mjs && node --check src/codex-oauth-gateway.mjs && node --check src/opencode-oauth-gateway.mjs && node --check scripts/configure-openrouter.mjs && node --check scripts/restore-claude.mjs && node --check scripts/run-openrouter-gateway.mjs && node --check scripts/run-codex-gateway.mjs && node --check scripts/run-opencode-gateway.mjs && node --check app/main.mjs && node --check app/make-icons.mjs && node --check app/renderer.js && node --check app/preload.cjs"
   },
   "engines": {
     "node": ">=18.17"
@@ -46,13 +50,14 @@
   },
   "build": {
     "appId": "dev.claudedesktopshim.gateway",
-    "productName": "Claude OpenRouter Gateway",
+    "productName": "Claude Desktop Gateway",
     "files": [
       "app/**/*",
       "src/**/*",
       "scripts/configure-openrouter.mjs",
       "scripts/restore-claude.mjs",
       "scripts/run-codex-gateway.mjs",
+      "scripts/run-opencode-gateway.mjs",
       "package.json"
     ],
     "extraMetadata": { "main": "app/main.mjs" },
